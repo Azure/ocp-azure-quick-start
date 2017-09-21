@@ -1,0 +1,710 @@
+﻿/* Powershell - UTF-16 to UTF-8 conversion */
+
+select 'Get-Content '+replace(name, '_','')+'.dat -Encoding Unicode | Set-Content '+replace(name, '_','')+'.txt -Encoding utf8'
+from sys.tables
+order by name asc
+
+-- A: Create a master key.
+-- Only necessary if one does not already exist.
+-- Required to encrypt the credential secret in the next step.
+
+CREATE MASTER KEY;
+
+
+-- B: Create a database scoped credential
+-- Provide your Azure storage account key. The identity is associated with the credential. -- It is not used for authentication to Azure storage.
+-- *** Not required for publicly accesible (RO) storage containers ***
+
+CREATE DATABASE SCOPED CREDENTIAL AzureStorageCredential 
+WITH 
+   IDENTITY = '<identity_name of data source Storage>', 
+   SECRET = '<the_storage_key_goes_here>'
+;
+
+
+-- C: Create an external data source
+-- Specify the blob service endpoint and the name of the database-scoped credential.
+
+CREATE EXTERNAL DATA SOURCE FraudData 
+WITH (  
+    TYPE = Hadoop, 
+--    LOCATION = '<local path of the data source. For example for mooncake the RUL may be like wasbs://frauddata@{datasource BLOB storage container}.database.chinacloudapi.cn>',
+    CREDENTIAL = AzureStorageCredential
+); 
+
+
+-- D: Create an external file format
+-- Specify the way the sample data is formatted in the Azure storage blobs.
+
+CREATE EXTERNAL FILE FORMAT PipeDelimitedTextFile 
+WITH (
+    FORMAT_TYPE = DelimitedText, 
+    FORMAT_OPTIONS (FIELD_TERMINATOR = '|')
+);
+
+
+-- E: Create the external table
+-- Specify the fields and data types for the table. This needs to match the data
+-- in the sample file. Also specify the path to the data from the root directory
+-- of the data source.
+
+/* LOADING */
+
+-- MigrationHistory
+BEGIN
+CREATE EXTERNAL TABLE dbo.ExtMigrationHistory (
+	[MigrationId] [nvarchar](150) NOT NULL,
+	[ContextKey] [nvarchar](300) NOT NULL,
+	[Model] [varbinary](4000) NOT NULL,
+	[ProductVersion] [nvarchar](32) NOT NULL)
+WITH (
+    LOCATION='textdata/MigrationHistory.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	SELECT count(*) FROM dbo.ExtMigrationHistory;
+
+		CREATE TABLE MigrationHistory
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtMigrationHistory];
+END
+-- CustomerSegment
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtCustomerSegment] (
+    [SegmentId] bigint NOT NULL, 
+    [Segment] nvarchar(4000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+)
+WITH (
+    LOCATION='textdata/CustomerSegment.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	SELECT count(*) FROM dbo.[ExtCustomerSegment]
+
+		CREATE TABLE CustomerSegment
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtCustomerSegment];
+END
+--DateDim
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtDateDim] (
+    [FinYearId] bigint NOT NULL, 
+    [FinYear] nvarchar(4000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [FiscalYear] nvarchar(4000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [FiscalQuarter] nvarchar(4000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [FiscalMonth] nvarchar(4000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [MonthNumber] int NOT NULL, 
+    [Year] int NOT NULL, 
+    [Quarter] int NOT NULL
+)
+WITH (
+    LOCATION='textdata/DateDim.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from extdatedim
+
+			CREATE TABLE DateDim
+			WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+			AS SELECT * FROM [ExtDateDim];
+END
+-- Inventory
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtInventory] (
+    [InventoryId] bigint NOT NULL, 
+    [StoreId] bigint NOT NULL, 
+    [FinYearId] bigint NOT NULL, 
+    [ProductId] bigint NOT NULL, 
+    [StaffId] bigint NOT NULL, 
+    [OpeningQuantity] bigint NOT NULL, 
+    [SaleQuantity] bigint NOT NULL, 
+    [ReturnQuantity] bigint NOT NULL, 
+    [ClosingQuantity] bigint NOT NULL
+)
+WITH (
+    LOCATION='textdata/Inventory.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from [ExtInventory]
+
+		CREATE TABLE Inventory
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtInventory];
+END
+-- Location
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtLocation] (
+    [StoreId] bigint NOT NULL, 
+    [StoreName] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [City] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [State] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [Country] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [StateCode] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [Latitude] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [Longitude] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL, 
+    [Region] nvarchar(300) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+)
+WITH (
+    LOCATION='textdata/Location.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	SELECT COUNT(*) FROM [ExtLocation];
+
+		CREATE TABLE [Location]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtLocation];
+END
+-- PaymentMethod
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtPaymentMethod] (
+    [PaymentId] bigint NOT NULL, 
+    [PaymentBy] nvarchar(4000) --varbinary --failed data type conversion
+)
+WITH (
+    LOCATION='textdata/PaymentMethod.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from [dbo].[ExtPaymentMethod]
+	
+
+		CREATE TABLE [dbo].[PaymentMethod]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtPaymentMethod];
+
+		select count(*) from PaymentMethod
+END
+
+-- Product
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtProduct](
+	[ProductId] [bigint]  NOT NULL,
+	[Category] [nvarchar](4000) NULL,
+	[SubCategory] [nvarchar](4000) NULL)
+WITH (
+    LOCATION='textdata/Product.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from ExtProduct;
+
+		CREATE TABLE [dbo].[Product]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtProduct];
+END
+-- ProductPlots
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtProductPlots](
+	[ProductName] [varchar](100) NULL,
+	[Plot] [nvarchar](4000) NOT NULL) --varbinary --failed data type conversion
+WITH (
+    LOCATION='textdata/ProductPlots.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from ExtProductPlots;
+
+		CREATE TABLE [dbo].[ProductPlots]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtProductPlots];
+END
+-- ProductSalesAnalysis
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtProductSalesAnalysis](
+	[ProductNumber] [varchar](10) NULL,
+	[DiscountOfferNumber] [int] NOT NULL,
+	[TransactionNumber] [int] NOT NULL,
+	[POSNumber] [int] NOT NULL,
+	[POSDate] [date] NOT NULL,
+	[TransactionDate] [date] NOT NULL,
+	[SaleDate] [date] NOT NULL,
+	[SaleAmount] [money] NOT NULL,
+	[PreOrderNumber] [int] NOT NULL,
+	[ProductName] [varchar](100) NULL,
+	[ProductID] [int] NULL)
+WITH (
+    LOCATION='textdata/ProductSalesAnalysis.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from ExtProductSalesAnalysis
+
+		CREATE TABLE [dbo].[ProductSalesAnalysis]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = HASH(TransactionNumber))
+		AS SELECT * FROM [ExtProductSalesAnalysis]
+END
+-- ProductSalesAnalysis_bu
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtProductSalesAnalysis_bu](
+	[ProductNumber] [varchar](10) NULL,
+	[DiscountOfferNumber] [int] NOT NULL,
+	[TransactionNumber] [int] NOT NULL,
+	[POSNumber] [int] NOT NULL,
+	[POSDate] [date] NOT NULL,
+	[TransactionDate] [date] NOT NULL,
+	[SaleDate] [date] NOT NULL,
+	[SaleAmount] [money] NOT NULL,
+	[PreOrderNumber] [int] NOT NULL,
+	[ProductName] [varchar](100) NULL,
+	[ProductID] [int] NULL)
+WITH (
+    LOCATION='textdata/ProductSalesAnalysisbu.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from [ExtProductSalesAnalysis_bu];
+
+		CREATE TABLE [dbo].[ProductSalesAnalysis_bu]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = HASH(TransactionNumber))
+		AS SELECT * FROM [ExtProductSalesAnalysis_bu];
+END
+-- RetailChannel
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtRetailChannel](
+	[RetailChannelId] [bigint]  NOT NULL,
+	[Channel] [nvarchar](4000) NULL)
+WITH (
+    LOCATION='textdata/RetailChannel.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	SELECT COUNT(*) FROM [ExtRetailChannel];
+
+		CREATE TABLE [dbo].[RetailChannel]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtRetailChannel];
+END
+-- Staff
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtStaff](
+	[StaffId] [bigint]  NOT NULL,
+	[StaffName] [nvarchar](4000) NULL)
+WITH (
+    LOCATION='textdata/Staff.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	SELECT COUNT(*) FROM [ExtStaff];
+
+		CREATE TABLE [dbo].[Staff]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtStaff];
+END
+-- StorePlots
+
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtStorePlots](
+	[StoreName] [varchar](100) NULL,
+	[Plot] [varbinary](4000) NOT NULL)
+WITH (
+    LOCATION='textdata/StorePlots.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	SELECT COUNT(*) FROM [ExtStorePlots];
+
+		CREATE TABLE [dbo].[StorePlots]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM ExtStorePlots;
+END
+-- StoreSalesAnalysis
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtStoreSalesAnalysis](
+	[CustomerNumber] [varchar](10) NULL,
+	[DiscountOfferNumber] [int] NOT NULL,
+	[TransactionNumber] [int] NOT NULL,
+	[POSNumber] [int] NOT NULL,
+	[POSDate] [date] NOT NULL,
+	[TransactionDate] [date] NOT NULL,
+	[SaleDate] [date] NOT NULL,
+	[SaleAmount] [money] NOT NULL,
+	[PreOrderNumber] [int] NOT NULL,
+	[StoreID] [int] NULL,
+	[StoreName] [varchar](100) NULL)
+WITH (
+    LOCATION='textdata/StoreSalesAnalysis.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from [ExtStoreSalesAnalysis];
+
+		CREATE TABLE [dbo].[StoreSalesAnalysis]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = HASH(TransactionNumber))
+		AS SELECT * FROM [ExtStoreSalesAnalysis];
+END
+
+-- StoreSalesAnalysis_bu
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtStoreSalesAnalysis_bu](
+	[CustomerNumber] [varchar](10) NULL,
+	[DiscountOfferNumber] [int] NOT NULL,
+	[TransactionNumber] [int] NOT NULL,
+	[POSNumber] [int] NOT NULL,
+	[POSDate] [date] NOT NULL,
+	[TransactionDate] [date] NOT NULL,
+	[SaleDate] [date] NOT NULL,
+	[SaleAmount] [money] NOT NULL,
+	[PreOrderNumber] [int] NOT NULL,
+	[StoreID] [int] NULL,
+	[StoreName] [varchar](100) NULL)
+WITH (
+    LOCATION='textdata/StoreSalesAnalysisbu.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+SELECT COUNT(*) FROM [ExtStoreSalesAnalysis_bu];
+
+CREATE TABLE [dbo].[StoreSalesAnalysis_bu]
+WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = HASH(TransactionNumber))
+AS SELECT * FROM [ExtStoreSalesAnalysis_bu];
+END
+-- TrackProducts
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtTrackProducts](
+	[ProductName] [varchar](100) NULL,
+	[Digit1] [int] NULL,
+	[Digit2] [int] NULL,
+	[Digit3] [int] NULL,
+	[Digit4] [int] NULL,
+	[Digit5] [int] NULL,
+	[Digit6] [int] NULL,
+	[Digit7] [int] NULL,
+	[Digit8] [int] NULL,
+	[Digit9] [int] NULL,
+	[Pvalue] [float] NULL)
+WITH (
+    LOCATION='textdata/TrackProducts.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from [ExtTrackProducts];
+
+		CREATE TABLE [dbo].[TrackProducts]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtTrackProducts];
+END
+
+-- TrackStores
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtTrackStores](
+	[StoreName] [varchar](100) NULL,
+	[Digit1] [int] NULL,
+	[Digit2] [int] NULL,
+	[Digit3] [int] NULL,
+	[Digit4] [int] NULL,
+	[Digit5] [int] NULL,
+	[Digit6] [int] NULL,
+	[Digit7] [int] NULL,
+	[Digit8] [int] NULL,
+	[Digit9] [int] NULL,
+	[Pvalue] [float] NULL)
+WITH (
+    LOCATION='textdata/TrackStores.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	select count(*) from [ExtTrackStores];
+
+		CREATE TABLE [dbo].[TrackStores]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = ROUND_ROBIN)
+		AS SELECT * FROM [ExtTrackStores];
+END
+
+-- Transaction
+BEGIN
+CREATE EXTERNAL TABLE [dbo].[ExtTransaction](
+	[TransactionId] [bigint]  NOT NULL,
+	[ProductId] [bigint] NOT NULL,
+	[DateApsId] [bigint] NOT NULL,
+	[StoreId] [bigint] NOT NULL,
+	[StaffId] [bigint] NOT NULL,
+	[RetailChannelId] [bigint] NOT NULL,
+	[CustomerSegmentId] [bigint] NOT NULL,
+	[PaymentMethodId] [bigint] NOT NULL,
+	[COGS] [float] NOT NULL,
+	[SaleQuantity] [int] NOT NULL,
+	[UnitPrice] [float] NOT NULL,
+	[SaleAmount] [float] NOT NULL,
+	[TaxRate] [float] NOT NULL,
+	[TaxAmount] [float] NOT NULL,
+	[GrossAmount] [float] NOT NULL,
+	[TenderedAmount] [float] NOT NULL,
+	[ProfitMargin] [float] NOT NULL,
+	[PaymentCount] [int] NOT NULL,
+	[ReturnQuantity] [int] NOT NULL,
+	[ReturnAmount] [float] NOT NULL,
+	[TransactionDate] [datetime] NOT NULL,
+	[CogsPerUnit] [float] NOT NULL)
+WITH (
+    LOCATION='textdata/Transaction.txt', 
+    DATA_SOURCE=FraudData, 
+    FILE_FORMAT=PipeDelimitedTextFile
+);
+
+	SELECT COUNT(*) FROM [ExtTransaction];
+
+		CREATE TABLE [dbo].[Transaction]
+		WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = HASH(TransactionID))
+		AS SELECT * FROM [ExtTransaction];
+END
+
+-- CREATE STATISTICS
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo___MigrationHistory_ContextKey ON dbo.MigrationHistory ([ContextKey]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo___MigrationHistory_MigrationId ON dbo.MigrationHistory ([MigrationId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo___MigrationHistory_Model ON dbo.MigrationHistory ([Model]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo___MigrationHistory_ProductVersion ON dbo.MigrationHistory ([ProductVersion]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_CustomerSegment_Segment ON dbo.CustomerSegment ([Segment]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_CustomerSegment_SegmentId ON dbo.CustomerSegment ([SegmentId]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_FinYear ON dbo.DateDim ([FinYear]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_FinYearId ON dbo.DateDim ([FinYearId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_FiscalMonth ON dbo.DateDim ([FiscalMonth]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_FiscalQuarter ON dbo.DateDim ([FiscalQuarter]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_FiscalYear ON dbo.DateDim ([FiscalYear]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_MonthNumber ON dbo.DateDim ([MonthNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_Quarter ON dbo.DateDim ([Quarter]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_DateDim_Year ON dbo.DateDim ([Year]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_ClosingQuantity ON dbo.Inventory ([ClosingQuantity]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_FinYearId ON dbo.Inventory ([FinYearId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_InventoryId ON dbo.Inventory ([InventoryId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_OpeningQuantity ON dbo.Inventory ([OpeningQuantity]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_ProductId ON dbo.Inventory ([ProductId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_ReturnQuantity ON dbo.Inventory ([ReturnQuantity]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_SaleQuantity ON dbo.Inventory ([SaleQuantity]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_StaffId ON dbo.Inventory ([StaffId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Inventory_StoreId ON dbo.Inventory ([StoreId]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_City ON dbo.Location ([City]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_Country ON dbo.Location ([Country]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_Latitude ON dbo.Location ([Latitude]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_Longitude ON dbo.Location ([Longitude]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_Region ON dbo.Location ([Region]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_State ON dbo.Location ([State]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_StateCode ON dbo.Location ([StateCode]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_StoreId ON dbo.Location ([StoreId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Location_StoreName ON dbo.Location ([StoreName]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_PaymentMethod_PaymentBy ON dbo.PaymentMethod ([PaymentBy]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_PaymentMethod_PaymentId ON dbo.PaymentMethod ([PaymentId]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Product_Category ON dbo.Product ([Category]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Product_ProductId ON dbo.Product ([ProductId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Product_SubCategory ON dbo.Product ([SubCategory]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductPlots_Plot ON dbo.ProductPlots ([Plot]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductPlots_ProductName ON dbo.ProductPlots ([ProductName]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_DiscountOfferNumber ON dbo.ProductSalesAnalysis ([DiscountOfferNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_POSDate ON dbo.ProductSalesAnalysis ([POSDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_POSNumber ON dbo.ProductSalesAnalysis ([POSNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_PreOrderNumber ON dbo.ProductSalesAnalysis ([PreOrderNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_ProductID ON dbo.ProductSalesAnalysis ([ProductID]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_ProductName ON dbo.ProductSalesAnalysis ([ProductName]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_ProductNumber ON dbo.ProductSalesAnalysis ([ProductNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_SaleAmount ON dbo.ProductSalesAnalysis ([SaleAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_SaleDate ON dbo.ProductSalesAnalysis ([SaleDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_TransactionDate ON dbo.ProductSalesAnalysis ([TransactionDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_TransactionNumber ON dbo.ProductSalesAnalysis ([TransactionNumber]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_DiscountOfferNumber ON dbo.ProductSalesAnalysis_bu ([DiscountOfferNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_POSDate ON dbo.ProductSalesAnalysis_bu ([POSDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_POSNumber ON dbo.ProductSalesAnalysis_bu ([POSNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_PreOrderNumber ON dbo.ProductSalesAnalysis_bu ([PreOrderNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_ProductID ON dbo.ProductSalesAnalysis_bu ([ProductID]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_ProductName ON dbo.ProductSalesAnalysis_bu ([ProductName]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_ProductNumber ON dbo.ProductSalesAnalysis_bu ([ProductNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_SaleAmount ON dbo.ProductSalesAnalysis_bu ([SaleAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_SaleDate ON dbo.ProductSalesAnalysis_bu ([SaleDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_TransactionDate ON dbo.ProductSalesAnalysis_bu ([TransactionDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_ProductSalesAnalysis_bu_TransactionNumber ON dbo.ProductSalesAnalysis_bu ([TransactionNumber]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_RetailChannel_Channel ON dbo.RetailChannel ([Channel]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_RetailChannel_RetailChannelId ON dbo.RetailChannel ([RetailChannelId]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Staff_StaffId ON dbo.Staff ([StaffId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Staff_StaffName ON dbo.Staff ([StaffName]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StorePlots_Plot ON dbo.StorePlots ([Plot]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StorePlots_StoreName ON dbo.StorePlots ([StoreName]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_CustomerNumber ON dbo.StoreSalesAnalysis ([CustomerNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_DiscountOfferNumber ON dbo.StoreSalesAnalysis ([DiscountOfferNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_POSDate ON dbo.StoreSalesAnalysis ([POSDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_POSNumber ON dbo.StoreSalesAnalysis ([POSNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_PreOrderNumber ON dbo.StoreSalesAnalysis ([PreOrderNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_SaleAmount ON dbo.StoreSalesAnalysis ([SaleAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_SaleDate ON dbo.StoreSalesAnalysis ([SaleDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_StoreID ON dbo.StoreSalesAnalysis ([StoreID]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_StoreName ON dbo.StoreSalesAnalysis ([StoreName]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_TransactionDate ON dbo.StoreSalesAnalysis ([TransactionDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_TransactionNumber ON dbo.StoreSalesAnalysis ([TransactionNumber]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_CustomerNumber ON dbo.StoreSalesAnalysis_bu ([CustomerNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_DiscountOfferNumber ON dbo.StoreSalesAnalysis_bu ([DiscountOfferNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_POSDate ON dbo.StoreSalesAnalysis_bu ([POSDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_POSNumber ON dbo.StoreSalesAnalysis_bu ([POSNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_PreOrderNumber ON dbo.StoreSalesAnalysis_bu ([PreOrderNumber]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_SaleAmount ON dbo.StoreSalesAnalysis_bu ([SaleAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_SaleDate ON dbo.StoreSalesAnalysis_bu ([SaleDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_StoreID ON dbo.StoreSalesAnalysis_bu ([StoreID]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_StoreName ON dbo.StoreSalesAnalysis_bu ([StoreName]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_TransactionDate ON dbo.StoreSalesAnalysis_bu ([TransactionDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_StoreSalesAnalysis_bu_TransactionNumber ON dbo.StoreSalesAnalysis_bu ([TransactionNumber]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit1 ON dbo.TrackProducts ([Digit1]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit2 ON dbo.TrackProducts ([Digit2]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit3 ON dbo.TrackProducts ([Digit3]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit4 ON dbo.TrackProducts ([Digit4]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit5 ON dbo.TrackProducts ([Digit5]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit6 ON dbo.TrackProducts ([Digit6]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit7 ON dbo.TrackProducts ([Digit7]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit8 ON dbo.TrackProducts ([Digit8]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Digit9 ON dbo.TrackProducts ([Digit9]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_ProductName ON dbo.TrackProducts ([ProductName]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackProducts_Pvalue ON dbo.TrackProducts ([Pvalue]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit1 ON dbo.TrackStores ([Digit1]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit2 ON dbo.TrackStores ([Digit2]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit3 ON dbo.TrackStores ([Digit3]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit4 ON dbo.TrackStores ([Digit4]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit5 ON dbo.TrackStores ([Digit5]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit6 ON dbo.TrackStores ([Digit6]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit7 ON dbo.TrackStores ([Digit7]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit8 ON dbo.TrackStores ([Digit8]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Digit9 ON dbo.TrackStores ([Digit9]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_Pvalue ON dbo.TrackStores ([Pvalue]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_TrackStores_StoreName ON dbo.TrackStores ([StoreName]) WITH FULLSCAN;
+
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_COGS ON dbo.[Transaction] ([COGS]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_CogsPerUnit ON dbo.[Transaction] ([CogsPerUnit]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_CustomerSegmentId ON dbo.[Transaction] ([CustomerSegmentId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_DateApsId ON dbo.[Transaction] ([DateApsId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_GrossAmount ON dbo.[Transaction] ([GrossAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_PaymentCount ON dbo.[Transaction] ([PaymentCount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_PaymentMethodId ON dbo.[Transaction] ([PaymentMethodId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_ProductId ON dbo.[Transaction] ([ProductId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_ProfitMargin ON dbo.[Transaction] ([ProfitMargin]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_RetailChannelId ON dbo.[Transaction] ([RetailChannelId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_ReturnAmount ON dbo.[Transaction] ([ReturnAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_ReturnQuantity ON dbo.[Transaction] ([ReturnQuantity]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_SaleAmount ON dbo.[Transaction] ([SaleAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_SaleQuantity ON dbo.[Transaction] ([SaleQuantity]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_StaffId ON dbo.[Transaction] ([StaffId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_StoreId ON dbo.[Transaction] ([StoreId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_TaxAmount ON dbo.[Transaction] ([TaxAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_TaxRate ON dbo.[Transaction] ([TaxRate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_TenderedAmount ON dbo.[Transaction] ([TenderedAmount]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_TransactionDate ON dbo.[Transaction] ([TransactionDate]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_TransactionId ON dbo.[Transaction] ([TransactionId]) WITH FULLSCAN;
+CREATE STATISTICS stat_RetailDemo_FraudDetection_Final_dbo_Transaction_UnitPrice ON dbo.[Transaction] ([UnitPrice]) WITH FULLSCAN;
+
+-- Queries
+Go
+
+
+IF OBJECT_ID ('VSalesByStoreAndProduct', 'V') IS NOT NULL  
+DROP VIEW VSalesByStoreAndProduct ;  
+GO  
+create view VSalesByStoreAndProduct
+AS
+select 
+psa.TransactionNumber as PSTransactionNumber, psa.POSNumber as PSPOSNumber, psa.POSDate as PSPOSDate, psa.TransactionDate as PSTransactionDate, 
+	psa.SaleDate as PSSaleDate, psa.SaleAmount as PSSaleAmount, 
+ssa.TransactionNumber as SSTransactionNumber, ssa.POSNumber as SSPOSNumber, ssa.POSDate as SSPOSDate, ssa.TransactionDate as SSTransactionDate, 
+	ssa.SaleDate as SSSaleDate, ssa.SaleAmount as SSSaleAmount, ssa.StoreName as SSStoreName, ssa.StoreID as SSStoreID,
+S.StaffID, S.StaffName,
+L.City, L.[State], L.Country, L.Region, L.StateCode, L.Latitude, L.Longitude,
+T.TransactionID,  
+P.ProductID, P.Category, P.SubCategory
+ from ProductSalesAnalysis PSA
+JOIN StoreSalesAnalysis SSA
+ ON PSA.POSNumber = SSA.POSNumber
+JOIN Product P
+ ON PSA.ProductID = P.ProductID
+JOIN [Transaction] T
+ ON SSA.TransactionNumber = T.TransactionID
+JOIN [Location] L
+ ON SSA.StoreID = L.StoreID 
+JOIN Staff S
+ ON T.StaffID = S.StaffID;
+ 
+GO
+
+IF OBJECT_ID ('VTransactionProfit', 'V') IS NOT NULL  
+DROP VIEW VTransactionProfit ;  
+GO  
+create view [VTransactionProfit]
+as
+select T.TransactionID, T.SaleQuantity, T.UnitPrice, T.SaleAmount, T.TaxAmount, 
+T.GrossAmount, T.TenderedAmount, T.ProfitMargin, T.PaymentCount, T.ReturnQuantity, T.ReturnAmount, T.TransactionDate,
+S.StaffName,
+P.ProductID, P.Category, P.SubCategory, 
+L.StoreID, L.StoreName, L.City, L.[State], L.StateCode, L.Country, L.Region, L.Latitude, L.Longitude
+from [Transaction] T
+JOIN Staff S
+on T.StaffID = S.StaffID 
+JOIN Product P
+on T.ProductID = P.ProductID
+JOIN Location L
+ON T.StoreID = L.StoreID
+where T.ReturnAmount > 10
+AND T.TransactionDate > '2014-01-01 00:00:00.000'
+AND L.StoreID IN (16,18,41);
+GO
+
+IF OBJECT_ID ('vTransaction', 'V') IS NOT NULL  
+DROP VIEW vTransaction ;  
+GO
+create view vTransaction
+as
+select * from [Transaction]
+where TransactionDate > '2014-01-01 00:00:00.000';
+
+Go
+
+UPDATE [LOCATION]
+SET City = 'Miami', State = 'Florida', StateCode = 'FL', Latitude = '25.79822', Longitude = '-80.20963' WHERE StoreID = 41;
+
+--Data Fudge for accurage graphing of Miami (Source data has been fudged to show Miami instead of Canberra, however coordinates were not updated)
+UPDATE [LOCATION]
+SET City = 'Miami', State = 'Florida', StateCode = 'FL', Country = 'USA', Region = 'North & Central America', 
+Latitude = '25.79822', Longitude = '-80.20963' WHERE StoreID = 1;
+
+UPDATE [TRANSACTION]
+SET RETURNAMOUNT = SALEQUANTITY, PROFITMARGIN = (PROFITMARGIN * 28 /100) 
+WHERE STOREID = 1 AND TRANSACTIONDATE BETWEEN '2013-11-10 00:00:00.000' AND '2014-11-10 00:00:00.000';
+Go
+UPDATE [STORESALESANALYSIS]
+SET STORENAME = 'Northwind Traders Canberra Store' where storeid = 1;
+
+UPDATE [STORESALESANALYSIS]
+SET STORENAME = 'Northwind Miami Store' where storeid = 41;
+Go
+
+CREATE TABLE STORESALESANALYSIS
+WITH (CLUSTERED COLUMNSTORE INDEX, DISTRIBUTION = HASH(TransactionNumber))
+AS SELECT * FROM STORESALESANALYSIS_BU;
+
+drop table storesalesanalysis;
