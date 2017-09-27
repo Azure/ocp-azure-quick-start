@@ -26,11 +26,11 @@
 npm install -g iothub-explorer
 
     在一切就绪后，可以通过下面的命令创建IoT Hub 设备连接字符串：
-
+```
 iothub-explorer login &quot;[IoT Hub 服务连接字符串]&quot;
 
 iothub-explorer create &lt;设备ID&gt; --connection-string
-
+```
 ![图片](/images/Internet-of-Things/03.png)
 
 上图中高亮的connectionString 的值需要复制到样例项目中，作为connectionString 字符串指针的值。 重新构建之后，样例程序即可上送消息到IoT Hub 服务中。
@@ -48,10 +48,10 @@ git clone https://github.com/Azure/azure-iot-sdk-node.git
 ![图片](/images/Internet-of-Things/04.png)
 
 在命令行下使用npm 安装azure-iot-device 和azure-iot-device-mqtt 两个Node.js 组件：
-
+```
 npm install azure-iot-device-mqtt
 npm install azure-iot-device
-
+```
 然后在Node.js 环境中运行simple\_sample\_device.js 文件，命令如下：
 
 node simple\_sample\_device.js
@@ -63,11 +63,11 @@ Node.js 设备客户端模拟程序会持续地向IoT Hub 发送测试数据。�
 在确保Node.js 设备客户端模拟程序持续向IoT Hub 发送测试数据的同时，可以利用IoT Hub Explorer 工具监控设备实时发来的数据。
 
    您需要打开另一个命令行窗口，然后输入以下命令：
-
+```
 iothub-explorer monitor-events &lt;设备ID，比如Device-1&gt; --login &quot;[IoT Hub 服务连接字符串]&quot;
-
+```
    然后您会收到类似下面，由设备发送来的数据：
-
+```
 Monitoring events from device Device-1...
 
 ==== From: Device-1 ====
@@ -93,7 +93,7 @@ Monitoring events from device Device-1...
 }
 
 ====================
-
+```
    您可以通过Ctrl + C 停止这个程序。
 
    同时，您可以通过portal.azure.cn 网站上，IoT Hub 服务的首页，了解服务端收到的消息数量，如下图所示：
