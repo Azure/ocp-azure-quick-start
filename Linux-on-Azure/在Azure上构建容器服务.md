@@ -9,7 +9,7 @@
 - **创建你的第一个 Kubernetes 服务**
 - **通过 Kubernetes Web UI 使用 Azure 容器服务**
 
-我们同时支持使用 Web 管理门户网站和命令行在 Azure 上创建 Kubernetes 群集。请选择 Option 1 或 Option 2 其中之一，来实现此目标。
+我们同时支持使用 Web 管理门户网站和命令行在 Azure 上创建 Kubernetes 群集。
 
 ## 必备条件
 
@@ -42,7 +42,7 @@ Azure 快速入门模板可用于在 Azure 容器服务中部署一个群集。�
 ```
 az cloud set --name AzureChinaCloud
 
-az login -u &lt;你的Azure账户登录名&gt; -p &lt;你的Azure 账户密码&gt;
+az login -u <你的Azure账户登录名> -p <你的Azure 账户密码>
 
 az account show
 ```
@@ -52,23 +52,23 @@ az account show
 
   {
 
-    &quot;cloudName&quot;: &quot;AzureCloud&quot;,
+    “cloudName“: “AzureCloud“,
 
-    &quot;id&quot;: &quot;e06d665d-88f4-4e6b-831c-cf4dfb9f3c88&quot;,
+    “id“: “e06d665d-88f4-4e6b-831c-cf4dfb9f3c88“,
 
-    &quot;isDefault&quot;: true,
+    “isDefault“: true,
 
-    &quot;name&quot;: &quot;Microsoft Azure Internal Consumption&quot;,
+    “name“: “Microsoft Azure Internal Consumption“,
 
-    &quot;state&quot;: &quot;Enabled&quot;,
+    “state“: “Enabled“,
 
-    &quot;tenantId&quot;: &quot;72f988bf-86f1-41af-91ab-2d7cd011db47&quot;,
+    “tenantId“: “72f988bf-86f1-41af-91ab-2d7cd011db47“,
 
-    &quot;user&quot;: {
+    “user“: {
 
-      &quot;name&quot;: &quot;micl@microsoft.com&quot;,
+      “name“: “micl@microsoft.com“,
 
-      &quot;type&quot;: &quot;user&quot;
+      “type“: “user“
 
     }
 
@@ -78,29 +78,29 @@ az account show
 ```
 1. 选择当前订阅。
 ```
-az account set --subscription &quot;e06d665d-88f4-4e6b-831c-cf4dfb9f3c88&quot;
+az account set --subscription “e06d665d-88f4-4e6b-831c-cf4dfb9f3c88“
 ```
 1. 在此订阅下创建一个自定义资源组，资源组的名称请自行指定。
 ```
-az group create -n &quot;&lt;你自己指定的资源组名称&gt;&quot; -l &quot;chinanorth&quot;
+az group create -n “<你自己指定的资源组名称>“ -l “chinanorth“
 ```
 1. 获得服务主体的信息
 ```
-az ad sp create-for-rbac --role=&quot;Contributor&quot; --scopes=&quot;/subscriptions/e06d665d-88f4-4e6b-831c-cf4dfb9f3c88/resourceGroups/&lt;你的资源组名称&gt;&quot;
+az ad sp create-for-rbac --role=“Contributor“ --scopes=“/subscriptions/e06d665d-88f4-4e6b-831c-cf4dfb9f3c88/resourceGroups/<你的资源组名称>“
 ```
 你将获取如下的服务主体信息：
 ```
 {
 
-  &quot;appId&quot;: &quot;2412dfb2-983b-4d19-aec1-91ed894ce9ab&quot;,
+  “appId“: “2412dfb2-983b-4d19-aec1-91ed894ce9ab“,
 
-  &quot;displayName&quot;: &quot;azure-cli-2017-05-29-05-32-22&quot;,
+  “displayName“: “azure-cli-2017-05-29-05-32-22“,
 
-  &quot;name&quot;: &quot;http://azure-cli-2017-05-29-05-32-22&quot;,
+  “name“: “http://azure-cli-2017-05-29-05-32-22“,
 
-  &quot;password&quot;: &quot;2ad760da-b05b-498e-81c0-01e7d3c931b8&quot;,
+  “password“: “2ad760da-b05b-498e-81c0-01e7d3c931b8“,
 
-  &quot;tenant&quot;: &quot;72f988bf-86f1-41af-91ab-2d7cd011db47&quot;
+  “tenant“: “72f988bf-86f1-41af-91ab-2d7cd011db47“
 
 }
 ```
@@ -110,55 +110,55 @@ az ad sp create-for-rbac --role=&quot;Contributor&quot; --scopes=&quot;/subscrip
 ```
 {
 
-  &quot;apiVersion&quot;: &quot;vlabs&quot;,
+  “apiVersion“: “vlabs“,
 
-  &quot;location&quot;: &quot;chinanorth&quot;,
+  “location“: “chinanorth“,
 
-  &quot;properties&quot;: {
+  “properties“: {
 
-    &quot;orchestratorProfile&quot;: {
+    “orchestratorProfile“: {
 
-      &quot;orchestratorType&quot;: &quot;Kubernetes&quot;
-
-    },
-
-    &quot;masterProfile&quot;: {
-
-      &quot;count&quot;: 1,
-
-      &quot;dnsPrefix&quot;: &quot;&lt;你自定义的DNS名称，也就是k8s实例名称&gt;&quot;,
-
-      &quot;vmSize&quot;: &quot;Standard\_A2&quot;
+      “orchestratorType“: “Kubernetes“
 
     },
 
-    &quot;agentPoolProfiles&quot;: [
+    “masterProfile“: {
+
+      “count“: 1,
+
+      “dnsPrefix“: “<你自定义的DNS名称，也就是k8s实例名称>“,
+
+      “vmSize“: “Standard\_A2“
+
+    },
+
+    “agentPoolProfiles“: [
 
       {
 
-        &quot;name&quot;: &quot;agentpool1&quot;,
+        “name“: “agentpool1“,
 
-        &quot;count&quot;: 3,
+        “count“: 3,
 
-        &quot;vmSize&quot;: &quot;Standard\_A2&quot;,
+        “vmSize“: “Standard\_A2“,
 
-        &quot;availabilityProfile&quot;: &quot;AvailabilitySet&quot;
+        “availabilityProfile“: “AvailabilitySet“
 
       }
 
     ],
 
-    &quot;linuxProfile&quot;: {
+    “linuxProfile“: {
 
-      &quot;adminUsername&quot;: &quot;azureuser&quot;,
+      “adminUsername“: “azureuser“,
 
-      &quot;ssh&quot;: {
+      “ssh“: {
 
-        &quot;publicKeys&quot;: [
+        “publicKeys“: [
 
           {
 
-            &quot;keyData&quot;: &quot;ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDW1NWH65/eTJaFKavYyF+MonEcUwM4sp2ESyrKVRdAtlzScYf531Kbt7quVDXaqgE/0gjF+MHHbmscxdEprY+CmxUwgDNhBp6SXR+BxzjLPr+4r2NW+bEkmeQKyoISdu3wQqZDReJ/ewUWp0ZhvAfeAZkzmN+1hv41V37qe4gtz3o1fcSPjoJoEJzLJYrmavnn4qU1IMWJxEetH97Mo639MYokwq8LjebQ6x3qoM2Xh38ECLvC2gLSpcLcfBWVuhFG5chYuVxZ1Q3ttg5nWXkvSmz6/7FWMrBTpvArLEeXFozQ3A0UlcSbQpr/svt2KYtyJMf4mG+Z57YI3v4LXGiv&quot;
+            “keyData“: “ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDW1NWH65/eTJaFKavYyF+MonEcUwM4sp2ESyrKVRdAtlzScYf531Kbt7quVDXaqgE/0gjF+MHHbmscxdEprY+CmxUwgDNhBp6SXR+BxzjLPr+4r2NW+bEkmeQKyoISdu3wQqZDReJ/ewUWp0ZhvAfeAZkzmN+1hv41V37qe4gtz3o1fcSPjoJoEJzLJYrmavnn4qU1IMWJxEetH97Mo639MYokwq8LjebQ6x3qoM2Xh38ECLvC2gLSpcLcfBWVuhFG5chYuVxZ1Q3ttg5nWXkvSmz6/7FWMrBTpvArLEeXFozQ3A0UlcSbQpr/svt2KYtyJMf4mG+Z57YI3v4LXGiv“
 
           }
 
@@ -168,11 +168,11 @@ az ad sp create-for-rbac --role=&quot;Contributor&quot; --scopes=&quot;/subscrip
 
     },
 
-    &quot;servicePrincipalProfile&quot;: {
+    “servicePrincipalProfile“: {
 
-      &quot;servicePrincipalClientID&quot;: &quot;&lt;上一步骤中生成的appId&gt;&quot;,
+      “servicePrincipalClientID“: “<上一步骤中生成的appId>“,
 
-      &quot;servicePrincipalClientSecret&quot;: &quot;&lt;上一步骤中生成的password&gt;&quot;
+      “servicePrincipalClientSecret“: “<上一步骤中生成的password>“
 
     }
 
@@ -180,7 +180,7 @@ az ad sp create-for-rbac --role=&quot;Contributor&quot; --scopes=&quot;/subscrip
 
 }
 ```
-该文件需要被保存到acs-engine 命令所在目录中。其中带有&lt;&gt;标注的部分需要自行填写。
+该文件需要被保存到acs-engine 命令所在目录中。其中带有<>标注的部分需要自行填写。
 
 在完成对kubernetes.json 文件的编辑之后，可利用acs-engine 命令生成针对Kubernetes 部署的Azure ARM 资源模板文件。
 ```
@@ -188,7 +188,7 @@ cd acs-engine/  #跳转到acs-engine 根目录
 
 ./acs-engine generate ./kubernetes.json
 
-ls ./\_output/&lt;群集DNS名称&gt;/ #此时，该目录下有一系列的文件生成。
+ls ./\_output/<群集DNS名称>/ #此时，该目录下有一系列的文件生成。
 ```
 1. 使用以下命令传递部署参数文件，以创建一个容器服务群集，其中：
 
@@ -197,7 +197,7 @@ ls ./\_output/&lt;群集DNS名称&gt;/ #此时，该目录下有一系列的文�
 - **TEMPLATE\_FILE**  是部署文件 azuredeploy.json的位置。
 - **PARAMETERS**  **要在路径前面加一个@符号** 。
 ```
-az group deployment create --name &quot;&lt;自定义部署名称&gt;&quot; --resource-group &quot;&lt;你的资源组名称&gt;&quot; --template-file &quot;./\_output/&lt;DNS名称&gt;/azuredeploy.json&quot; --parameters @&quot;./\_output/&lt;DNS 名称&gt;/azuredeploy.parameters.json&quot;
+az group deployment create --name “<自定义部署名称>“ --resource-group “<你的资源组名称>“ --template-file “./\_output/<DNS名称>/azuredeploy.json“ --parameters @“./\_output/<DNS 名称>/azuredeploy.parameters.json“
 ```
 群集的创建执行需要较长的时间，需要耐心等待。待出现命令提示行之后，即代表部署操作结束。这一过程将持续约20分钟左右。
 
@@ -255,11 +255,11 @@ kubectl expose deployments nginx --port=80 --type=LoadBalancer
 ```
 kubectl get svc
 
-101-acs-kubernetes&gt; kubectl get svc
+101-acs-kubernetes> kubectl get svc
 
 NAME         CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
 
-kubernetes   10.0.0.1       &lt;none&gt;         443/TCP        18m
+kubernetes   10.0.0.1       <none>         443/TCP        18m
 
 nginx        10.0.150.193   13.75.119.37   80:32257/TCP   4m
 ```
@@ -286,11 +286,11 @@ kubectl get pods
 ```
 使用你的 Pod 名称，可以在你的 Pod 上运行一个远程命令。例如：
 ```
-kubectl exec &lt;pod name&gt; date
+kubectl exec <pod name> date
 ```
 也可以使用 -it 标志来获取一个完全交互式的会话：
 ```
-kubectl exec &lt;pod name&gt; -it bash
+kubectl exec <pod name> -it bash
 ```
  ![图片](/images/Linux-on-Azure/03.png)
 
