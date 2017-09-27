@@ -258,7 +258,7 @@ ssh 远程连接到虚拟机
 
 
 运行如下脚本安装部署应用：
-
+```
 user01@vm-myvm01:~$ sudo apt-get update
 
 user01@vm-myvm01:~$ sudo apt-get install nodejs
@@ -272,19 +272,14 @@ user01@vm-myvm01:~$ git init
 user01@vm-myvm01:~$ git clone https://github.com/cheneyszp/FastStartEmotionDemo.git
 
 user01@vm-myvm01:~$ vi /home/user01/FastStartEmotionDemo/public/javascripts/main.js
-
+```
 --用上面记录的keys，分别给YOUR_FACE_API_KEY、YOUR_EMOTION_API_KEY赋值，然后保存。
-
+```
 user01@vm-myvm01:~$ cd /home/user01/FastStartEmotionDemo/
 
 user01@vm-myvm01:~/FastStartEmotionDemo$ nohup sudo npm start &
-
+```
 部署完毕，请用手机浏览器访问 http://YOURIP，请一定要转发到微信群中分享哦！
 
 今天你开心吗？
 
-Copy to clipboard
-Want to convert another document?
-
-
-@benbalter | source | feedback
