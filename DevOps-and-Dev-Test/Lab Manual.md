@@ -40,9 +40,9 @@ TFS使用  **生成定义**  来管理项目的持续集成配置，在每一个
 
 ![图片](/images/DevOps-and-Dev-Test/02.png)
 
-![图片](/images/DevOps-and-Dev-Test/03.png)
+![图片](/images/DevOps-and-Dev-Test/27.png)
 
-![图片](/images/DevOps-and-Dev-Test/04.png)
+![图片](/images/DevOps-and-Dev-Test/03.png)
 
 - 本地创建目录，并将示例代码克隆到本地目录
 
@@ -58,7 +58,7 @@ TFS使用  **生成定义**  来管理项目的持续集成配置，在每一个
 
 大概需要几分钟的时间将代码克隆下来。
 
-![图片](/images/DevOps-and-Dev-Test/05.png)
+![图片](/images/DevOps-and-Dev-Test/04.png)
 
 你可以使用下面的命令进入到目录下
 
@@ -78,7 +78,7 @@ TFS使用  **生成定义**  来管理项目的持续集成配置，在每一个
 
 或者你可以直接上项目的首页，就可以看到这个链接。
 
-![图片](/images/DevOps-and-Dev-Test/06.png)
+![图片](/images/DevOps-and-Dev-Test/05.png)
 
 - 添加VSTS的仓库URL
 
@@ -94,48 +94,48 @@ TFS使用  **生成定义**  来管理项目的持续集成配置，在每一个
 
 你应该可以在VSTS里头看到代码啦！
 
-![图片](/images/DevOps-and-Dev-Test/07.png)
+![图片](/images/DevOps-and-Dev-Test/06.png)
 
-![图片](/images/DevOps-and-Dev-Test/08.png)
+![图片](/images/DevOps-and-Dev-Test/07.png)
 
 ### Task 2: 创建下持续集成的生成构建
 
 - 进入VSTS网站，点击项目，点击&quot;Build&amp;Release&quot;
 
-![图片](/images/DevOps-and-Dev-Test/09.png)
+![图片](/images/DevOps-and-Dev-Test/08.png)
 - 点击&quot;
 ###
 **New Definition**&quot;
 
-![图片](/images/DevOps-and-Dev-Test/10.png)
+![图片](/images/DevOps-and-Dev-Test/09.png)
 
 - 选择&quot;空白&quot;的模板，点击&quot;Apply&quot;按钮。其实你可以看到，这里可以支持很多种模板，包括Android、iOS、Node.js等等。
 
-![图片](/images/DevOps-and-Dev-Test/11.png)
+![图片](/images/DevOps-and-Dev-Test/10.png)
 
 - 设置&quot;Hosted&quot;模式，设置resource是本项目的master，然后点击&quot;Save&amp;queue&quot;。
 - 点击&quot;Add Task&quot;，选择&quot;Utility&quot;，选择PowerShell，点击&quot;Add&quot;。
 
-![图片](/images/DevOps-and-Dev-Test/12.png)
+![图片](/images/DevOps-and-Dev-Test/11.png)
 
 - 依然在本页面，选择&quot;Test&quot;，选择&quot;Publish Test Result&quot;，点击&quot;Add&quot;。
 
-![图片](/images/DevOps-and-Dev-/13.png)
+![图片](/images/DevOps-and-Dev-Test/12.png)
 
 - 依然在本页面，选择&quot;Utility&quot;，选择&quot;Copy and Publish Artifacts&quot;，点击&quot;Add&quot;。
 
-![图片](/images/DevOps-and-Dev-Test/14.png)
+![图片](/images/DevOps-and-Dev-Test/13.png)
 
 - 这样，我们就已经添加了3个任务。
 
-![图片](/images/DevOps-and-Dev-Test/15.png)
+![图片](/images/DevOps-and-Dev-Test/14.png)
 
 - 点击&quot;PowerShell Script&quot;，更新脚本名称为&quot;dotnet restore, build, test and publish&quot;，Type的话选&quot;File Path&quot;，Script Path的话输入 &quot;build.ps1&quot; ，Arguments 属性的话输入 $(BuildConfiguration) $(build.stagingDirectory)
 
-![图片](/images/DevOps-and-Dev-Test/16.png)
+![图片](/images/DevOps-and-Dev-Test/15.png)
 
 -
-点击&quot; **Publish Test Results**&quot;任务，更新Test Result Format为&quot; **XUnit**&quot;， **Test Results File** 更改为&quot; **\*\*/testresults.xml**&quot;。 ![图片](/images/DevOps-and-Dev-Test/17.png)
+点击&quot; **Publish Test Results**&quot;任务，更新Test Result Format为&quot; **XUnit**&quot;， **Test Results File** 更改为&quot; **\*\*/testresults.xml**&quot;。 ![图片](/images/DevOps-and-Dev-Test/16.png)
 - 点击&quot;  **Copy Publish Artifact**&quot;，更新 **Copy Root** 为&quot;**$(build.stagingDirectory)**&quot;， **Contents** 的填入&quot; **\*\*\\*.zip**&quot;，
 ###
 **Artifact Name** 的话输入 &quot; **drop**  &quot; ， **Artifact Type** 属性的话选 **Server**
