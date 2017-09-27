@@ -103,60 +103,58 @@ TFS使用  **生成定义**  来管理项目的持续集成配置，在每一个
 - 进入VSTS网站，点击项目，点击&quot;Build&amp;Release&quot;
 
 ![图片](/images/DevOps-and-Dev-Test/08.png)
-- 点击&quot;
-###
-**New Definition**&quot;
+- 点击&quot;**New Definition**&quot;
 
-![图片](/images/DevOps-and-Dev-Test/09.png)
+![图片](/images/DevOps-and-Dev-Test/28.png)
 
 - 选择&quot;空白&quot;的模板，点击&quot;Apply&quot;按钮。其实你可以看到，这里可以支持很多种模板，包括Android、iOS、Node.js等等。
 
-![图片](/images/DevOps-and-Dev-Test/10.png)
+![图片](/images/DevOps-and-Dev-Test/09.png)
 
 - 设置&quot;Hosted&quot;模式，设置resource是本项目的master，然后点击&quot;Save&amp;queue&quot;。
 - 点击&quot;Add Task&quot;，选择&quot;Utility&quot;，选择PowerShell，点击&quot;Add&quot;。
 
-![图片](/images/DevOps-and-Dev-Test/11.png)
+![图片](/images/DevOps-and-Dev-Test/10.png)
 
 - 依然在本页面，选择&quot;Test&quot;，选择&quot;Publish Test Result&quot;，点击&quot;Add&quot;。
 
-![图片](/images/DevOps-and-Dev-Test/12.png)
+![图片](/images/DevOps-and-Dev-Test/11.png)
 
 - 依然在本页面，选择&quot;Utility&quot;，选择&quot;Copy and Publish Artifacts&quot;，点击&quot;Add&quot;。
 
-![图片](/images/DevOps-and-Dev-Test/13.png)
+![图片](/images/DevOps-and-Dev-Test/12.png)
 
 - 这样，我们就已经添加了3个任务。
 
-![图片](/images/DevOps-and-Dev-Test/14.png)
+![图片](/images/DevOps-and-Dev-Test/13.png)
 
 - 点击&quot;PowerShell Script&quot;，更新脚本名称为&quot;dotnet restore, build, test and publish&quot;，Type的话选&quot;File Path&quot;，Script Path的话输入 &quot;build.ps1&quot; ，Arguments 属性的话输入 $(BuildConfiguration) $(build.stagingDirectory)
 
-![图片](/images/DevOps-and-Dev-Test/15.png)
+![图片](/images/DevOps-and-Dev-Test/14.png)
 
 -
-点击&quot; **Publish Test Results**&quot;任务，更新Test Result Format为&quot; **XUnit**&quot;， **Test Results File** 更改为&quot; **\*\*/testresults.xml**&quot;。 ![图片](/images/DevOps-and-Dev-Test/16.png)
+点击&quot; **Publish Test Results**&quot;任务，更新Test Result Format为&quot; **XUnit**&quot;， **Test Results File** 更改为&quot; **\*\*/testresults.xml**&quot;。 ![图片](/images/DevOps-and-Dev-Test/15.png)
 - 点击&quot;  **Copy Publish Artifact**&quot;，更新 **Copy Root** 为&quot;**$(build.stagingDirectory)**&quot;， **Contents** 的填入&quot; **\*\*\\*.zip**&quot;，
 ###
 **Artifact Name** 的话输入 &quot; **drop**  &quot; ， **Artifact Type** 属性的话选 **Server**
 
-![图片](/images/DevOps-and-Dev-Test/17.png)
+![图片](/images/DevOps-and-Dev-Test/16.png)
 
 - 点击&quot;Variables&quot;，点击&quot;Add&quot;，添加新的变量参数
 
-![图片](/images/DevOps-and-Dev-Test/18.png)
+![图片](/images/DevOps-and-Dev-Test/17.png)
 
 - 输入&quot;BuildConfiguration&quot;，值为&quot;release&quot;，这个值我们在build.ps1中会用到。
 
-![图片](/images/DevOps-and-Dev-Test/19.png)
+![图片](/images/DevOps-and-Dev-Test/18.png)
 
 - 点击&quot;Triggers&quot;，把&quot;Continuous Integration&quot;选项打开，确保我们可以在每次更改的时候触发生成操作。
 
-![图片](/images/DevOps-and-Dev-Test/20.png)
+![图片](/images/DevOps-and-Dev-Test/19.png)
 
 - 点击右上角的&quot;Save&quot;按钮，保存我们的修改
 
-![图片](/images/DevOps-and-Dev-Test/21.png)
+![图片](/images/DevOps-and-Dev-Test/20.png)
 
 ### Task 3: 在VSTS中测试CI的触发器
 
@@ -164,26 +162,26 @@ TFS使用  **生成定义**  来管理项目的持续集成配置，在每一个
 
 - 选择Code 这个tab，然后选择咱们的代码仓库 HOL
 
-![图片](/images/DevOps-and-Dev-Test/22.png)
+![图片](/images/DevOps-and-Dev-Test/21.png)
 
 - 切到文件/src/PartsUnlimitedWebsite/Controllers/HomeController.cs，点击&quot;Edit&quot;
 
-![图片](/images/DevOps-and-Dev-Test/23.png)
+![图片](/images/DevOps-and-Dev-Test/22.png)
 
 - 随便加入一行代码，比如加入一行注释&quot;//This is a test of CI&quot;，点击&quot;Commit&quot;
 
-![图片](/images/DevOps-and-Dev-Test/24.png)
+![图片](/images/DevOps-and-Dev-Test/23.png)
 
-![图片](/images/DevOps-and-Dev-Test/25.png)
+![图片](/images/DevOps-and-Dev-Test/24.png)
 
 - 点击&quot;Build and Realease&quot;，你应该可以看到已经出发的生成操作
 
-![图片](/images/DevOps-and-Dev-Test/26.png)
+![图片](/images/DevOps-and-Dev-Test/25.png)
 
 - 点击生成号码&quot;#2&quot;，可以看到详细的生成过程，还有日志信息等。
 
-![图片](/images/DevOps-and-Dev-Test/27.png)
+![图片](/images/DevOps-and-Dev-Test/26.png)
 
 - 点击&quot;Build 2&quot;，可以看到生成的报告，比如生成失败会有相应的错误信息。
 
-![图片](/images/DevOps-and-Dev-Test/28.png)
+![图片](/images/DevOps-and-Dev-Test/27.png)
