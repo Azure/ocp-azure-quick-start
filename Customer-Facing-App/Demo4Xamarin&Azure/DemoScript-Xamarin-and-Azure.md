@@ -1,19 +1,15 @@
-Azure 10 - Customer Facing App (中国版本)
-
-版本号：v1.0
-
-**使用Xamarin和Azure web服务构建跨平台应用体验**
+# 使用Xamarin和Azure web服务构建跨平台应用体验
 
 在本实验中，你可以学习并体验到如何使用Xamarin开发iOS和Android的应用，并且集成Azure PaaS平台的能力，包括：通知中心、
 
-**特别说明：**
+## 特别说明：
 
 - 本实验介绍的是在Windows平台上，用Visual Studio 2017和Xamarin Workload来开发跨平台的应用（不是游戏），其可以通过Xamarin Live Player进行开发调试。
 - 关于在Mac平台上使用Visual Studio Code进行iOS, MacOS和Android的开发，请浏览 [http://developer.xamarin.com](http://developer.xamarin.com)
 
 
 
-**内容安排**
+## 内容安排
 
 - 必备条件
 - 配置本实验开发环境
@@ -28,7 +24,7 @@ Azure 10 - Customer Facing App (中国版本)
   - 媒体服务（待更新）
   - 认知服务（待更新）
 
-**必备条件**
+## 必备条件
 
 为了实现Xamarin跨平台应用开发，并部署服务在Azure上，需要以下的开发工具和环境，才能完成本实验的内容。
 
@@ -39,7 +35,7 @@ Azure 10 - Customer Facing App (中国版本)
 
 
 
-**配置本实验开发环境**
+## 配置本实验开发环境
 
 1. 安装VS工作项 – Azure Development，如下图所示
 
@@ -53,7 +49,7 @@ Azure 10 - Customer Facing App (中国版本)
 
 ![图片](/images/Customer-Facing-App/03.png)
 
-**准备Xamarin Demo工程**
+## 准备Xamarin Demo工程
 
 1. 下载Xamarin Demo压缩文件(AXMobile.zip)，解压缩后可以看到文件列表如下
 
@@ -73,7 +69,7 @@ Azure 10 - Customer Facing App (中国版本)
 
 1. 截至当前，如无任何错误信息提示，则表明Demo的工程文件准备完毕。
 
-**部署展示Xamarin Demo应用**
+## 部署展示Xamarin Demo应用
 
 方法一，使用APK文件安装到安卓手机（文件名为：Xamarin-Demo-AXMobile-v1.apk）
 
@@ -105,7 +101,7 @@ Azure 10 - Customer Facing App (中国版本)
 
 
 
-**整合Azure高级服务**
+## 整合Azure高级服务
 
 通过使用Azure高级服务，可以帮助显著提升Xamarin开发的应用体验和开发效率。目前，通用的Azure高级服务包括：应用服务，推送服务，媒体服务，认知服务等。该Demo中已经使用了应用服务，推送服务和媒体服务，展示如下。
 
