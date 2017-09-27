@@ -81,21 +81,21 @@ Azure 10 - Customer Facing App (中国版本)
 
 1. 打开AX应用后，可以浏览 点击 会议 和 新闻 进行浏览
 
-![图片](/images/Customer-Facing-App/08.png)
+![图片](/images/Customer-Facing-App/08.png) ![图片](/images/Customer-Facing-App/09.png)
 
 1. 在新闻列表中，点击第二条新闻，即微软云媒体服务介绍，可以用于展示Azure Media Service能力
 
-![图片](/images/Customer-Facing-App/09.png)
+![图片](/images/Customer-Facing-App/10.png) ![图片](/images/Customer-Facing-App/11.png)
 
 方法二，使用VS进行编译并真机部署
 
 1. 通过USB线连接安卓手机与电脑，在安卓手机设置中，需要开启开发者模式并运行通过USB进行调试，正确连接后，会显示可以的安卓设备
 
-![图片](/images/Customer-Facing-App/10.png)
+![图片](/images/Customer-Facing-App/12.png)
 
 1. 右键选择工程文件中的&#39;AXMobile.Droid&#39;，点击选择&#39;Set as StartUp Project&#39;，如下图所示
 
-![图片](/images/Customer-Facing-App/11.png)
+![图片](/images/Customer-Facing-App/13.png)
 
 1. 选择要部署的安卓设备，启动Debug进行部署和调试，部署成功后，在手机上会出现名字为&#39;AX&#39;的应用图标，同上述的方法一
 
@@ -111,10 +111,10 @@ Azure 10 - Customer Facing App (中国版本)
 
 1. 应用服务。本Demo中的会议和新闻的信息均通过Azure应用服务提供，用.NET开发的后端服务直接部署成Azure的应用服务，点击NewsService.cs文件，可以考虑服务端API信息如下。
 
-![图片](/images/Customer-Facing-App/12.png)
+![图片](/images/Customer-Facing-App/14.png)
 
 说明：我们在更新该后端服务，后续会提供源代码和配置文件，方便演示人员部署到自己的Azure订阅中
 
 1. 推送服务。Azure的推送服务可以把信息推送到iOS和Android的设备上。打开Demo中的AppConstants.cs文件，可以考虑推送服务的配置信息如下图所示
 
-![图片](/images/Customer-Facing-App/13.png)
+![图片](/images/Customer-Facing-App/15.png)
