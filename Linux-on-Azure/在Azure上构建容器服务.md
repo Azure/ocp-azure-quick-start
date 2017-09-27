@@ -47,7 +47,7 @@ az login -u &lt;你的Azure账户登录名&gt; -p &lt;你的Azure 账户密码&g
 az account show
 ```
 登录成功后，你会得到订阅信息，请注意你的订阅Id（也就是第二行的id的值）
-
+```
 [
 
   {
@@ -75,7 +75,7 @@ az account show
   }
 
 ]
-
+```
 1. 选择当前订阅。
 ```
 az account set --subscription &quot;e06d665d-88f4-4e6b-831c-cf4dfb9f3c88&quot;
@@ -89,7 +89,7 @@ az group create -n &quot;&lt;你自己指定的资源组名称&gt;&quot; -l &quo
 az ad sp create-for-rbac --role=&quot;Contributor&quot; --scopes=&quot;/subscriptions/e06d665d-88f4-4e6b-831c-cf4dfb9f3c88/resourceGroups/&lt;你的资源组名称&gt;&quot;
 ```
 你将获取如下的服务主体信息：
-
+```
 {
 
   &quot;appId&quot;: &quot;2412dfb2-983b-4d19-aec1-91ed894ce9ab&quot;,
@@ -103,7 +103,7 @@ az ad sp create-for-rbac --role=&quot;Contributor&quot; --scopes=&quot;/subscrip
   &quot;tenant&quot;: &quot;72f988bf-86f1-41af-91ab-2d7cd011db47&quot;
 
 }
-
+```
     在接下来的操作中，会用到 appId 和password信息。
 
 1. 下面跳转到acs-engine 所在目录下，对目录下的kubernetes.json 文件进行编辑。如果目录下没有这个文件，您可以打开一个文本编辑器，将下面文本保存为kubernetes.json文件。
