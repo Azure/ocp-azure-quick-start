@@ -4,16 +4,16 @@
 
 在进行本实验之前，需要您在计算机中安装以下组件：
 
-- js 下载地址： [https://nodejs.org/zh-cn/](https://nodejs.org/zh-cn/)
+- Node.js 下载地址： [https://nodejs.org/zh-cn/](https://nodejs.org/zh-cn/)
 - Git 客户端 下载地址： [https://git-scm.com/downloads](https://git-scm.com/downloads)
 
-## **创建IoT Hub 服务**
+## 创建IoT Hub 服务
 
-    在正式向IoT Hub 注册服务之前，必须要先创建一个位于Azure 上的IoT Hub 服务资源。首先，需要用Azure账号登录portal.azure.cn。 在门户网站上点击&quot;+&quot;号，选择物联网-&gt; IoT Hub, 创建一个IoT Hub 服务。在测试阶段，可以在服务级别中选择S1-标准，并新建一个名为&quot;IoTDemo&quot;的资源组，用于开发和测试。 如下图所示：
+    在正式向IoT Hub 注册服务之前，必须要先创建一个位于Azure 上的IoT Hub 服务资源。首先，需要用Azure账号登录portal.azure.cn。 在门户网站上点击"+"号，选择物联网-> IoT Hub, 创建一个IoT Hub 服务。在测试阶段，可以在服务级别中选择S1-标准，并新建一个名为"IoTDemo"的资源组，用于开发和测试。 如下图所示：
 
  ![图片](/images/Internet-of-Things/01.png)
 
-    待创建完成后，在IoT Hub 服务中选择&quot;共享访问策略&quot;-&gt;&quot;iothubowner&quot;-&gt;&quot;连接字符串 - 主密钥&quot; 进行复制。如图所示：
+    待创建完成后，在IoT Hub 服务中选择"共享访问策略"->"iothubowner"->"连接字符串 - 主密钥" 进行复制。如图所示：
 
  ![图片](/images/Internet-of-Things/02.png)
 
@@ -27,9 +27,9 @@ npm install -g iothub-explorer
 
     在一切就绪后，可以通过下面的命令创建IoT Hub 设备连接字符串：
 ```
-iothub-explorer login &quot;[IoT Hub 服务连接字符串]&quot;
+iothub-explorer login "[IoT Hub 服务连接字符串]"
 
-iothub-explorer create &lt;设备ID&gt; --connection-string
+iothub-explorer create <设备ID> --connection-string
 ```
 ![图片](/images/Internet-of-Things/03.png)
 
@@ -64,7 +64,7 @@ Node.js 设备客户端模拟程序会持续地向IoT Hub 发送测试数据。�
 
    您需要打开另一个命令行窗口，然后输入以下命令：
 ```
-iothub-explorer monitor-events &lt;设备ID，比如Device-1&gt; --login &quot;[IoT Hub 服务连接字符串]&quot;
+iothub-explorer monitor-events <设备ID，比如Device-1> --login "[IoT Hub 服务连接字符串]"
 ```
    然后您会收到类似下面，由设备发送来的数据：
 ```
@@ -74,13 +74,13 @@ Monitoring events from device Device-1...
 
 {
 
-  &quot;deviceId&quot;: &quot;myFirstDevice&quot;,
+  "deviceId": "myFirstDevice",
 
-  &quot;windSpeed&quot;: 10.223160492583531,
+  "windSpeed": 10.223160492583531,
 
-  &quot;temperature&quot;: 27.026194859899142,
+  "temperature": 27.026194859899142,
 
-  &quot;humidity&quot;: 79.49728640991773
+  "humidity": 79.49728640991773
 
 }
 
@@ -88,7 +88,7 @@ Monitoring events from device Device-1...
 
 {
 
-  &quot;temperatureAlert&quot;: &quot;false&quot;
+  "temperatureAlert": "false"
 
 }
 
