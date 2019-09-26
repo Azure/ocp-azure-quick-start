@@ -10,4 +10,4 @@
 Team Foundation Server 支持持续集成能力，开发人员可以通过TFS 或者其SaaS版本Visual Studio Online 实现持续集成过程。内容主要包括：
 + 微软DevOps解决方案介绍幻灯片
 + 实验手册
-+ 用于实验的样例项目 PartsUnlimited-master.zip
++ 用于实验的样例项目 [PartsUnlimited-master.zip](https://dxact.blob.core.chinacloudapi.cn/docs/PartsUnlimited-master.zip)
